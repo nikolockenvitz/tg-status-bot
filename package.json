@@ -1,0 +1,18 @@
+{
+  "name": "status-bot",
+  "version": "0.0.1",
+  "description": "",
+  "license": "MIT",
+  "author": "Niko Lockenvitz",
+  "scripts": {
+    "start": "ts-node index.ts"
+  },
+  "dependencies": {
+    "@types/node": "^14.11.1",
+    "dotenv": "^8.2.0",
+    "node-fetch": "^2.6.1",
+    "telegraf": "^3.38.0",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.3"
+  }
+}
