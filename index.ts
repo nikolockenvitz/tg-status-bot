@@ -38,9 +38,17 @@ async function main() {
   }
 }
 
+const MAX_TIME_TIMEOUT = Math.pow(2, 31) - 1;
+
 function executeAction(action: AbstractAction, data: IData, bot) {
   const now = Date.now();
   const timeToWait = action.getNextExecutionTime(data._updateTimes[action.name] || new Date(0)).getTime() - now;
+  if (timeToWait > MAX_TIME_TIMEOUT) {
+    setTimeout(function () {
+      executeAction(action, data, bot);
+    }, MAX_TIME_TIMEOUT);
+    return;
+  }
   setTimeout(async function () {
     await action.run(data[action.name], bot);
     data._updateTimes[action.name] = new Date();
