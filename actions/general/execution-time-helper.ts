@@ -28,7 +28,12 @@ export function weekly(lastExecutionTime: Date, day: number, hours: number, minu
   }
   const now = new Date();
   const nextMatch = getTodayWithDesiredHoursAndMinutes();
-  nextMatch.setDate(now.getDate() + ((day - now.getDay()) % 7) + (now > getTodayWithDesiredHoursAndMinutes() ? 7 : 0));
+  nextMatch.setDate(now.getDate() + modulo(day - now.getDay(), 7, now > getTodayWithDesiredHoursAndMinutes()));
   const previousMatch = new Date(nextMatch.getTime() - 7 * 24 * 60 * 60 * 1000);
   return lastExecutionTime > previousMatch ? nextMatch : now;
+}
+
+function modulo(a: number, m: number, addMIfZero = false): number {
+  const r = a % m;
+  return r + (r < 0 ? m : 0) + (r === 0 && addMIfZero ? m : 0);
 }
