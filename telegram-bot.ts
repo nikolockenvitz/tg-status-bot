@@ -1,4 +1,5 @@
 const { Telegraf } = require("telegraf");
+import { formatDate } from "./actions/general/utils";
 
 export class TelegramBot {
   private bot: typeof Telegraf;
@@ -23,7 +24,7 @@ export class TelegramBot {
     this.bot.command("/lastupdate", async (ctx) => {
       let message = "";
       for (const actionName in this.updateTimes) {
-        message += `*${actionName}*: ${formatDate(this.updateTimes[actionName])}\n`;
+        message += `*${actionName}*: ${formatDate(this.updateTimes[actionName], "HH:mm (WWW DD.MM.)")}\n`;
       }
       ctx.replyWithMarkdown(message || "No data available yet");
     });
@@ -45,22 +46,4 @@ export class TelegramBot {
   send(message: string) {
     this.bot.telegram.sendMessage(process.env.TELEGRAM_MY_CHAT_ID, message);
   }
-}
-
-function formatDate(date: Date): string {
-  return "HH:mm (WWW DD.MM.)"
-    .replace("YYYY", pad(date.getFullYear(), 4))
-    .replace("MM", pad(date.getMonth() + 1, 2))
-    .replace("DD", pad(date.getDate(), 2))
-    .replace("HH", pad(date.getHours(), 2))
-    .replace("mm", pad(date.getMinutes(), 2))
-    .replace("ss", pad(date.getSeconds(), 2))
-    .replace("WWW", ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()])
-    .replace("WWWW", ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][date.getDay()]);
-}
-
-function pad(text: string | number, length: number, padChar = "0", padFront = true) {
-  text = String(text);
-  const padChars = padChar.repeat(length - text.length).substr(0, length - text.length);
-  return padFront ? padChars + text : text + padChars;
 }
