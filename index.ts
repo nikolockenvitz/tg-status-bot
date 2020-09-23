@@ -8,6 +8,7 @@ const Actions = require("./actions");
 const FILENAME_DATA = "data.json";
 interface IData {
   _updateTimes?: any;
+  _lastSuccessfulUpdateTimes?: any;
   [key: string]: any;
 }
 
@@ -31,7 +32,7 @@ async function main() {
   saveDataToFile(data);
 
   console.log(`Found ${actions.length} actions, starting bot.`);
-  const bot = new TelegramBot(data._updateTimes);
+  const bot = new TelegramBot(data._updateTimes, data._lastSuccessfulUpdateTimes);
 
   for (const action of actions) {
     executeAction(action, data, bot);
@@ -40,9 +41,12 @@ async function main() {
 
 const MAX_TIME_TIMEOUT = Math.pow(2, 31) - 1;
 
-function executeAction(action: AbstractAction, data: IData, bot) {
+function executeAction(action: AbstractAction, data: IData, bot: TelegramBot) {
   const now = Date.now();
-  const timeToWait = action.getNextExecutionTime(data._updateTimes[action.name] || new Date(0)).getTime() - now;
+  const timeToWait =
+    action
+      .getNextExecutionTime(data._updateTimes[action.name] || new Date(0), data._lastSuccessfulUpdateTimes[action.name] || new Date(0))
+      .getTime() - now;
   if (timeToWait > MAX_TIME_TIMEOUT) {
     setTimeout(function () {
       executeAction(action, data, bot);
@@ -50,8 +54,15 @@ function executeAction(action: AbstractAction, data: IData, bot) {
     return;
   }
   setTimeout(async function () {
-    await action.run(data[action.name], bot);
-    data._updateTimes[action.name] = new Date();
+    let successful = false;
+    try {
+      successful = await action.run(data[action.name], bot);
+    } catch {}
+    const now = new Date();
+    data._updateTimes[action.name] = now;
+    if (successful) {
+      data._lastSuccessfulUpdateTimes[action.name] = now;
+    }
     saveDataToFile(data);
     executeAction(action, data, bot);
   }, timeToWait);
@@ -59,21 +70,23 @@ function executeAction(action: AbstractAction, data: IData, bot) {
 
 main();
 
-function readDataFromFile(): IData {
+async function readDataFromFile(): Promise<IData> {
   return new Promise((resolve) => {
-    fs.readFile(FILENAME_DATA, "utf8", (err, data) => {
-      if (err) throw err;
+    fs.readFile(FILENAME_DATA, "utf8", (err: Error, data: any) => {
+      if (err && !err.message.startsWith("ENOENT: no such file or directory")) throw err;
       try {
         data = JSON.parse(data);
       } catch {
         data = {};
       }
-      if (!("_updateTimes" in data)) {
-        data._updateTimes = {};
-      } else {
-        for (const key in data._updateTimes) {
-          if (data._updateTimes[key] && !(data._updateTimes[key] instanceof Date)) {
-            data._updateTimes[key] = new Date(data._updateTimes[key]);
+      for (const propertyActionDateMapping of ["_updateTimes", "_lastSuccessfulUpdateTimes"]) {
+        if (!(propertyActionDateMapping in data)) {
+          data[propertyActionDateMapping] = {};
+        } else {
+          for (const key in data[propertyActionDateMapping]) {
+            if (data[propertyActionDateMapping][key] && !(data[propertyActionDateMapping][key] instanceof Date)) {
+              data[propertyActionDateMapping][key] = new Date(data[propertyActionDateMapping][key]);
+            }
           }
         }
       }

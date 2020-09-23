@@ -12,11 +12,13 @@ interface IFreeSlotPerDay {
 }
 
 export default class PotsdamBuergerservice extends AbstractAction {
-  getNextExecutionTime(lastExecutionTime: Date): Date {
-    return executionTimeHelper.interval(lastExecutionTime, 10 * 60);
+  getNextExecutionTime(lastExecutionTime: Date, lastSuccessfulExecutionTime: Date): Date {
+    return lastExecutionTime.getTime() === lastSuccessfulExecutionTime.getTime()
+      ? executionTimeHelper.interval(lastExecutionTime, 10 * 60)
+      : executionTimeHelper.interval(lastExecutionTime, 2 * 60);
   }
 
-  async run(data: any, bot: TelegramBot): Promise<void> {
+  async run(data: any, bot: TelegramBot): Promise<boolean> {
     try {
       const slots = await this.getNumberOfFreeSlotsPerDay();
       const lookingForDates = {
@@ -45,6 +47,7 @@ export default class PotsdamBuergerservice extends AbstractAction {
         bot.send(message);
       }
       data.successful = true;
+      return true;
     } catch (error) {
       if (
         error &&
@@ -55,12 +58,13 @@ export default class PotsdamBuergerservice extends AbstractAction {
           // didn't fail last time -> probably only temporary error
           data.successful = false;
           console.log(error.message);
-          return;
+          return false;
         }
       }
       data.successful = false;
       console.log(error);
       bot.send(`Potsdam Buergerservice: Failed to get number of free slots per day (${error.message})`);
+      return false;
     }
   }
 
