@@ -44,7 +44,21 @@ export default class PotsdamBuergerservice extends AbstractAction {
         }
         bot.send(message);
       }
+      data.successful = true;
     } catch (error) {
+      if (
+        error &&
+        error.message &&
+        (error.message.endsWith("failed, reason: read ECONNRESET") || error.message.includes("failed, reason: getaddrinfo ENOTFOUND"))
+      ) {
+        if (data.successful === false) {
+          // didn't fail last time -> probably only temporary error
+          data.successful = false;
+          console.log(error.message);
+          return;
+        }
+      }
+      data.successful = false;
       console.log(error);
       bot.send(`Potsdam Buergerservice: Failed to get number of free slots per day (${error.message})`);
     }
