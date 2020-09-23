@@ -4,7 +4,11 @@ import { formatDate } from "./actions/general/utils";
 export class TelegramBot {
   private bot: typeof Telegraf;
 
-  constructor(private updateTimes: any, private lastSuccessfulUpdateTimes: any) {
+  constructor(
+    private actionsEnabledStatus: { [actionName: string]: boolean },
+    private updateTimes: any,
+    private lastSuccessfulUpdateTimes: any
+  ) {
     this.bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
     this.bot.use((ctx, next) => {
       if (Number(ctx.chat.id) === Number(process.env.TELEGRAM_MY_CHAT_ID)) {
@@ -35,10 +39,22 @@ export class TelegramBot {
       ctx.replyWithMarkdown(message || "No data available yet");
     });
 
+    this.bot.command("/actions", async (ctx) => {
+      let message = "";
+      for (const actionName in this.actionsEnabledStatus) {
+        message += `${this.actionsEnabledStatus[actionName] ? "✅️" : "⛔️"} ${actionName}\n`;
+      }
+      ctx.replyWithMarkdown(message || "No actions found");
+    });
+
     this.bot.telegram.setMyCommands([
       {
+        command: "actions",
+        description: "List of all actions",
+      },
+      {
         command: "lastupdate",
-        description: "Returns time of most recent execution",
+        description: "Time of most recent execution per action",
       },
     ]);
 

@@ -26,6 +26,10 @@ export default class PotsdamBuergerservice extends AbstractAction {
       : executionTimeHelper.interval(lastExecutionTime, 2 * 60);
   }
 
+  isEnabled(): boolean {
+    return this.lookingForDates && Object.keys(this.lookingForDates).length > 0;
+  }
+
   async run(data: any, bot: TelegramBot): Promise<boolean> {
     try {
       const slots = await this.getNumberOfFreeSlotsPerDay();

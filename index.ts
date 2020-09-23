@@ -32,7 +32,14 @@ async function main() {
   saveDataToFile(data);
 
   console.log(`Found ${actions.length} actions, starting bot.`);
-  const bot = new TelegramBot(data._updateTimes, data._lastSuccessfulUpdateTimes);
+  const bot = new TelegramBot(
+    actions.reduce((actionsEnabledStatus, action) => {
+      actionsEnabledStatus[action.name] = action.isEnabled();
+      return actionsEnabledStatus;
+    }, {}),
+    data._updateTimes,
+    data._lastSuccessfulUpdateTimes
+  );
 
   for (const action of actions) {
     executeAction(action, data, bot);
