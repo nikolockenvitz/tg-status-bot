@@ -1,8 +1,10 @@
 import { TelegramBot } from "../telegram-bot";
 import { AbstractAction } from "./general/abstract-action";
 import * as executionTimeHelper from "./general/execution-time-helper";
+const config = require("./general/config-import");
 
 import { fetch, objectToFormData, formatDate } from "./general/utils";
+import { IDateSelection } from "../types";
 
 interface IFreeSlotPerDay {
   date: number;
@@ -12,6 +14,12 @@ interface IFreeSlotPerDay {
 }
 
 export default class PotsdamBuergerservice extends AbstractAction {
+  private lookingForDates: IDateSelection = {};
+
+  constructor() {
+    super();
+    this.lookingForDates = config.POTSDAM_BUERGERSERVICE_LOOKING_FOR_DATES;
+  }
   getNextExecutionTime(lastExecutionTime: Date, lastSuccessfulExecutionTime: Date): Date {
     return lastExecutionTime.getTime() === lastSuccessfulExecutionTime.getTime()
       ? executionTimeHelper.interval(lastExecutionTime, 10 * 60)
@@ -21,18 +29,13 @@ export default class PotsdamBuergerservice extends AbstractAction {
   async run(data: any, bot: TelegramBot): Promise<boolean> {
     try {
       const slots = await this.getNumberOfFreeSlotsPerDay();
-      const lookingForDates = {
-        "2020": {
-          "10": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-        },
-      };
       const matches: IFreeSlotPerDay[] = [];
       for (const slot of slots) {
         if (slot.freeSlots > 0) {
           if (
-            slot.year in lookingForDates &&
-            slot.month in lookingForDates[slot.year] &&
-            lookingForDates[slot.year][slot.month].includes(slot.date)
+            slot.year in this.lookingForDates &&
+            slot.month in this.lookingForDates[slot.year] &&
+            this.lookingForDates[slot.year][slot.month].includes(slot.date)
           ) {
             matches.push(slot);
           }
