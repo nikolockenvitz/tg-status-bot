@@ -87,16 +87,15 @@ export default class PotsdamBuergerservice extends AbstractAction {
     PGUTSMSC = regexPGUTSMSC.exec(htmlAppointmentConcern)[1];
     TCSID = regexTCSID.exec(htmlAppointmentConcern)[1];
 
-    const payloadSelectConcern = {
-      PGUTSMSC,
-      TCSID,
-      ACTION_CONCERNSELECT_NEXT: "",
-    };
-    payloadSelectConcern[concernId] = "1";
     const htmlConcernFurtherInformation = await fetch(
       "POST",
       `${baseUrl}bgr;jsessionid=${sessionId}`,
-      objectToFormData(payloadSelectConcern),
+      objectToFormData({
+        PGUTSMSC,
+        TCSID,
+        ACTION_CONCERNSELECT_NEXT: "",
+        [concernId]: "1",
+      }),
       {
         headers: FORM_HEADERS,
       }
