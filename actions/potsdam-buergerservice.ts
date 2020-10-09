@@ -32,7 +32,7 @@ export default class PotsdamBuergerservice extends AbstractAction {
 
   async run(data: any, bot: TelegramBot): Promise<boolean> {
     try {
-      const slots = await this.getNumberOfFreeSlotsPerDay();
+      const { slots, url } = await this.getNumberOfFreeSlotsPerDay();
       const matches: IFreeSlotPerDay[] = [];
       for (const slot of slots) {
         if (slot.freeSlots > 0) {
@@ -51,7 +51,8 @@ export default class PotsdamBuergerservice extends AbstractAction {
         for (const match of matches) {
           message += `\n${formatDate(new Date(match.year, match.month - 1, match.date), "DD.MM.YYYY")}: ${match.freeSlots}`;
         }
-        bot.send(message);
+        message += `\n\n[Book Appointment](${url})`;
+        bot.send(message, { markdown: true });
       }
       data.successful = true;
       return true;
@@ -75,7 +76,7 @@ export default class PotsdamBuergerservice extends AbstractAction {
     }
   }
 
-  async getNumberOfFreeSlotsPerDay(): Promise<IFreeSlotPerDay[]> {
+  async getNumberOfFreeSlotsPerDay(): Promise<{ slots: IFreeSlotPerDay[]; url: string }> {
     const baseUrl = `https://egov.potsdam.de/tnv/`;
     const labelText = `Anmeldung einer Haupt- oder Nebenwohnung (Anzahl der Familienmitglieder anklicken)`;
 
@@ -184,7 +185,14 @@ export default class PotsdamBuergerservice extends AbstractAction {
         freeSlots: day.freeSlots,
       });
     }
-    return freeSlotsPerDay;
+    return {
+      slots: freeSlotsPerDay,
+      url: `${baseUrl}bgr;jsessionid=${sessionId}?${objectToFormData({
+        PGUTSMSC,
+        TCSID,
+        ACTION_CONCERNCOMMENTS_NEXT: "",
+      })}`,
+    };
   }
 }
 
