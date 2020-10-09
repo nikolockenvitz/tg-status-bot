@@ -31,7 +31,7 @@ async function main() {
   }
   saveDataToFile(data);
 
-  console.log(`Found ${actions.length} actions, starting bot.`);
+  console.log(`Found ${actions.filter(action => action.isEnabled()).length} actions, starting bot.`);
   const bot = new TelegramBot(
     actions.reduce((actionsEnabledStatus, action) => {
       actionsEnabledStatus[action.name] = action.isEnabled();
@@ -42,6 +42,7 @@ async function main() {
   );
 
   for (const action of actions) {
+    if (!action.isEnabled()) continue;
     executeAction(action, data, bot);
   }
 }

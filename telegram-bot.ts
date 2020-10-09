@@ -29,7 +29,9 @@ export class TelegramBot {
       let message = "";
       for (const actionName in this.updateTimes) {
         message += `*${actionName}*: ${formatDate(this.updateTimes[actionName], "HH:mm (WWW DD.MM.)")}`;
-        if (this.updateTimes[actionName].getTime() !== this.lastSuccessfulUpdateTimes[actionName].getTime()) {
+        if (!this.actionsEnabledStatus[actionName]) {
+          message += ` ⛔️`;
+        } else if (this.updateTimes[actionName].getTime() !== this.lastSuccessfulUpdateTimes[actionName].getTime()) {
           message += ` ⚠️ last successful: ${formatDate(this.lastSuccessfulUpdateTimes[actionName], "HH:mm (WWW DD.MM.)")}`;
         } else {
           message += ` ✅️`;
