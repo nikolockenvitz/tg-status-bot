@@ -3,3 +3,11 @@ export interface IDateSelection {
     [month: number]: Number[];
   };
 }
+
+export interface IWebpageRegexMatcherConfig {
+  webpages: Array<{
+    url: string;
+    message: string;
+    regex: RegExp;
+  }>;
+}
