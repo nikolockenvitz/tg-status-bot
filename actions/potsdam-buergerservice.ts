@@ -14,11 +14,13 @@ interface IFreeSlotPerDay {
 }
 
 export default class PotsdamBuergerservice extends AbstractAction {
+  private labelToLookFor = "";
   private lookingForDates: IDateSelection = {};
 
   constructor() {
     super();
-    this.lookingForDates = config.POTSDAM_BUERGERSERVICE_LOOKING_FOR_DATES;
+    this.labelToLookFor = config.POTSDAM_BUERGERSERVICE?.LABEL;
+    this.lookingForDates = config.POTSDAM_BUERGERSERVICE?.LOOKING_FOR_DATES;
   }
   getNextExecutionTime(lastExecutionTime: Date, lastSuccessfulExecutionTime: Date): Date {
     return lastExecutionTime.getTime() === lastSuccessfulExecutionTime.getTime()
@@ -78,7 +80,7 @@ export default class PotsdamBuergerservice extends AbstractAction {
 
   async getNumberOfFreeSlotsPerDay(): Promise<{ slots: IFreeSlotPerDay[]; url: string }> {
     const baseUrl = `https://egov.potsdam.de/tnv/`;
-    const labelText = `Anmeldung einer Haupt- oder Nebenwohnung (Anzahl der Familienmitglieder anklicken)`;
+    const labelText = this.labelToLookFor || `Anmeldung einer Haupt- oder Nebenwohnung (Anzahl der Familienmitglieder anklicken)`;
 
     const FORM_HEADERS = { "Content-Type": "application/x-www-form-urlencoded", Pragma: "no-cache", "Cache-Control": "no-cache" };
 
@@ -107,7 +109,7 @@ export default class PotsdamBuergerservice extends AbstractAction {
       }
     );
 
-    const regexConcernId = new RegExp(`<label for="id\\_([^"]*)">${escapeRegExp(labelText)}</label>`);
+    const regexConcernId = new RegExp(`<label for="id\\_([^"]*)">${escapeRegExp(replaceHtmlSpecialChars(labelText))}</label>`);
     const concernId = regexConcernId.exec(htmlAppointmentConcern)[1];
 
     PGUTSMSC = regexPGUTSMSC.exec(htmlAppointmentConcern)[1];
@@ -194,6 +196,10 @@ export default class PotsdamBuergerservice extends AbstractAction {
       })}`,
     };
   }
+}
+
+function replaceHtmlSpecialChars (string: string): string {
+  return string.replace(/ä/g, "&#xe4;").replace(/ö/g, "&#xf6;").replace(/ü/g, "&#xfc;");
 }
 
 function escapeRegExp(string: string): string {
