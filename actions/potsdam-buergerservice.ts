@@ -33,6 +33,7 @@ export default class PotsdamBuergerservice extends AbstractAction {
   }
 
   async run(data: any, bot: TelegramBot): Promise<boolean> {
+    const oldMessage = data.message || "";
     try {
       const { slots, url } = await this.getNumberOfFreeSlotsPerDay();
       const matches: IFreeSlotPerDay[] = [];
@@ -54,7 +55,15 @@ export default class PotsdamBuergerservice extends AbstractAction {
           message += `\n${formatDate(new Date(match.year, match.month - 1, match.date), "DD.MM.YYYY")}: ${match.freeSlots}`;
         }
         message += `\n\n[Book Appointment](${url})`;
-        bot.send(message, { markdown: true });
+        if (message.split("\n\n[Book Appointment]")[0] !== oldMessage.split("\n\n[Book Appointment]")[0]) {
+          bot.send(message, { markdown: true });
+        }
+        data.message = message;
+      } else {
+        if (oldMessage) {
+          bot.send("Potsdam Buergerservice - No Free Slots");
+        }
+        data.message = "";
       }
       data.successful = true;
       return true;
@@ -64,7 +73,7 @@ export default class PotsdamBuergerservice extends AbstractAction {
         error.message &&
         (error.message.endsWith("failed, reason: read ECONNRESET") || error.message.includes("failed, reason: getaddrinfo ENOTFOUND"))
       ) {
-        if (data.successful === false) {
+        if (data.successful === true) {
           // didn't fail last time -> probably only temporary error
           data.successful = false;
           console.log(error.message);
