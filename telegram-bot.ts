@@ -67,9 +67,9 @@ export class TelegramBot {
     });
   }
 
-  send(message: string, options?: { markdown?: boolean }) {
+  send(message: string, options?: { markdown?: boolean; markdownV2?: boolean }) {
     this.bot.telegram.sendMessage(process.env.TELEGRAM_MY_CHAT_ID, message, {
-      ...(options && options.markdown ? { parse_mode: "Markdown" } : {}),
+      ...(options && options.markdownV2 ? { parse_mode: "MarkdownV2" } : options && options.markdown ? { parse_mode: "Markdown" } : {}),
     });
   }
 }
