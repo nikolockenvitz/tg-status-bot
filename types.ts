@@ -11,3 +11,9 @@ export interface IWebpageRegexMatcherConfig {
     regex: RegExp;
   }>;
 }
+
+export interface IWeeklyExecutionTime {
+  day: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+  hour: number;
+  minute: number;
+}
