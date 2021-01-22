@@ -196,5 +196,5 @@ function discountToMarkdown(discount: IDiscount): string {
 }
 
 function escapeMarkdown(string: string): string {
-  return string.replace(/[_\*\[\]\(\)~`>#\+\-=\|\{\}\.!]/g, "\\$&");
+  return (string || "").replace(/[_\*\[\]\(\)~`>#\+\-=\|\{\}\.!]/g, "\\$&");
 }
