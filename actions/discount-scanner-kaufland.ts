@@ -6,8 +6,8 @@ import * as executionTimeHelper from "./general/execution-time-helper";
 import { IWeeklyExecutionTime } from "../types";
 const config = require("./general/config-import");
 
-export default class PotsdamBuergerservice extends AbstractAction {
-  private baseUrl = "https://www.kaufland.de";
+export default class KauflandDiscountScanner extends AbstractAction {
+  private baseUrl = "https://filiale.kaufland.de";
   private weeklyExecutionTime: IWeeklyExecutionTime;
   private searchTerms: string[] = [];
   private ignoreUrlPaths: string[] = [];
@@ -37,6 +37,9 @@ export default class PotsdamBuergerservice extends AbstractAction {
     try {
       const urls = await getDiscountUrls(this.baseUrl, this.ignoreUrlPaths);
       const discounts: IDiscount[] = [].concat(...(await Promise.all(urls.map((url) => getDiscounts(url)))));
+      if (discounts.length === 0) {
+        throw new Error("Internal Error - Found no discounts at all.");
+      }
       const matchingDiscounts: IDiscount[] = [];
       for (const discount of discounts) {
         for (const searchTerm of this.searchTerms) {
@@ -94,7 +97,7 @@ interface IDiscount {
 }
 
 async function getDiscountUrls(baseUrl: string, ignoreUrlPaths: string[]): Promise<string[]> {
-  const html = await fetch("GET", baseUrl);
+  const html = await fetch("GET", baseUrl + "/angebote/aktuelle-woche.html");
 
   const regexNavUrls = new RegExp(
     `<a class="o-navigation-main__link o-navigation-main__link--level-(?<level>\\d+)" role="menuitem" href="(?<url>[^"]*)"`,
