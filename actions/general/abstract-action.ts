@@ -6,5 +6,5 @@ export abstract class AbstractAction {
   isEnabled(): boolean {
     return true;
   }
-  abstract async run(data: any, bot: TelegramBot): Promise<boolean>;
+  abstract run(data: any, bot: TelegramBot): Promise<boolean>;
 }

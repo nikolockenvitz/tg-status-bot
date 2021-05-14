@@ -107,7 +107,7 @@ async function saveDataToFile(data: IData) {
   return new Promise((resolve) => {
     fs.writeFile(FILENAME_DATA, JSON.stringify(data, null, 2), "utf8", (err) => {
       if (err) throw err;
-      resolve();
+      resolve(true);
     });
   });
 }
