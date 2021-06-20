@@ -7,7 +7,8 @@ export class TelegramBot {
   constructor(
     private actionsEnabledStatus: { [actionName: string]: boolean },
     private updateTimes: any,
-    private lastSuccessfulUpdateTimes: any
+    private lastSuccessfulUpdateTimes: any,
+    private actionCallback: Function
   ) {
     this.bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
     this.bot.use((ctx, next) => {
@@ -44,9 +45,16 @@ export class TelegramBot {
     this.bot.command("/actions", async (ctx) => {
       let message = "";
       for (const actionName in this.actionsEnabledStatus) {
-        message += `${this.actionsEnabledStatus[actionName] ? "✅️" : "⛔️"} ${actionName}\n`;
+        message += `${this.actionsEnabledStatus[actionName] ? "✅️" : "⛔️"} /${actionName.replace(/-/g, "\\_")}\n`;
       }
       ctx.replyWithMarkdown(message || "No actions found");
+    });
+
+    this.bot.on("text", async (ctx) => {
+      const msg = ctx.message.text.replace(/_/g, "-");
+      if (msg.length > 1 && msg[0] === "/" && this.actionsEnabledStatus[msg.slice(1)]) {
+        this.actionCallback(msg.slice(1), this);
+      }
     });
 
     this.bot.telegram.setMyCommands([

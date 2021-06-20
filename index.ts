@@ -13,6 +13,7 @@ interface IData {
 }
 
 const actions: AbstractAction[] = [];
+let globalData: IData = {};
 
 async function main() {
   const data = await readDataFromFile();
@@ -31,20 +32,22 @@ async function main() {
   }
   saveDataToFile(data);
 
-  console.log(`Found ${actions.filter(action => action.isEnabled()).length} actions, starting bot.`);
+  console.log(`Found ${actions.filter((action) => action.isEnabled()).length} actions, starting bot.`);
   const bot = new TelegramBot(
     actions.reduce((actionsEnabledStatus, action) => {
       actionsEnabledStatus[action.name] = action.isEnabled();
       return actionsEnabledStatus;
     }, {}),
     data._updateTimes,
-    data._lastSuccessfulUpdateTimes
+    data._lastSuccessfulUpdateTimes,
+    actionCallback
   );
 
   for (const action of actions) {
     if (!action.isEnabled()) continue;
     executeAction(action, data, bot);
   }
+  globalData = data;
 }
 
 const MAX_TIME_TIMEOUT = Math.pow(2, 31) - 1;
@@ -62,18 +65,31 @@ function executeAction(action: AbstractAction, data: IData, bot: TelegramBot) {
     return;
   }
   setTimeout(async function () {
-    let successful = false;
-    try {
-      successful = await action.run(data[action.name], bot);
-    } catch {}
-    const now = new Date();
-    data._updateTimes[action.name] = now;
-    if (successful) {
-      data._lastSuccessfulUpdateTimes[action.name] = now;
-    }
-    saveDataToFile(data);
+    await _execAction(action, data, bot);
     executeAction(action, data, bot);
   }, timeToWait);
+}
+
+async function _execAction(action: AbstractAction, data: IData, bot: TelegramBot) {
+  let successful = false;
+  try {
+    successful = await action.run(data[action.name], bot);
+  } catch {}
+  const now = new Date();
+  data._updateTimes[action.name] = now;
+  if (successful) {
+    data._lastSuccessfulUpdateTimes[action.name] = now;
+  }
+  saveDataToFile(data);
+}
+
+function actionCallback(name: string, bot: TelegramBot) {
+  for (const action of actions) {
+    if (action.name === name) {
+      _execAction(action, globalData, bot);
+      break;
+    }
+  }
 }
 
 main();
