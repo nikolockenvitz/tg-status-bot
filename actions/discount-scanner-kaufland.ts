@@ -127,7 +127,10 @@ async function getDiscountUrls(baseUrl: string, ignoreUrlPaths: string[]): Promi
 }
 
 async function getDiscounts(url: string): Promise<Array<IDiscount>> {
-  const html = await fetch("GET", url);
+  const html = await fetch(
+    "GET", url, undefined,
+    { headers: { "Cookie": config.DISCOUNT_SCANNER_KAUFLAND?.cookies || "" } }
+  );
 
   const regexValidFromTo = new RegExp(`<h2>Gültig vom (\\d{2}\\.\\d{2}\\.\\d{4}) bis (\\d{2}\\.\\d{2}\\.\\d{4})</h2>`);
   const matchValidFromTo = regexValidFromTo.exec(html);
