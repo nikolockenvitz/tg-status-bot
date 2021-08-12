@@ -100,7 +100,7 @@ async function getDiscountUrls(baseUrl: string, ignoreUrlPaths: string[]): Promi
   const html = await fetch("GET", baseUrl + "/angebote/aktuelle-woche.html");
 
   const regexNavUrls = new RegExp(
-    `<a class="o-navigation-main__link o-navigation-main__link--level-(?<level>\\d+)" role="menuitem" href="(?<url>[^"]*)"`,
+    `<a class="o-navigation-main__link o-navigation-main__link--level-(?<level>\\d+)\\s*" role="menuitem" href="(?<url>[^"]*)"`,
     "g"
   );
   const navUrls: Array<{ level: number; url: string }> = [];
