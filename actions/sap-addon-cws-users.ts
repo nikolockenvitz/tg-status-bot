@@ -12,8 +12,8 @@ export default class SAPAddonCwsVersion extends AbstractAction {
 
   async run(data: any, bot: TelegramBot): Promise<boolean> {
     const html = await fetch("GET", "https://chrome.google.com/webstore/detail/sap-addon/ccjpkhcdklddbfpcboffbeihonalpjkc");
-    const versionRegex = new RegExp(`<Attribute name="user_count">([^<]*)</Attribute>`);
-    const regexResult = versionRegex.exec(html);
+    const userRegex = new RegExp(`<meta itemprop="interactionCount" content="UserDownloads:([^"]*)"/>`);
+    const regexResult = userRegex.exec(html);
     if (regexResult === null) {
       bot.send("Reading user_count for SAP Addon failed - regex didn't match");
       return false;
