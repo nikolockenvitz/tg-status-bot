@@ -30,6 +30,7 @@ export function weekly(lastExecutionTime: Date, day: number, hours: number, minu
   const nextMatch = getTodayWithDesiredHoursAndMinutes();
   nextMatch.setDate(now.getDate() + modulo(day - now.getDay(), 7, now > getTodayWithDesiredHoursAndMinutes()));
   const previousMatch = new Date(nextMatch.getTime() - 7 * 24 * 60 * 60 * 1000);
+  previousMatch.setHours(hours); // otherwise it may cause problems with DST
   return lastExecutionTime > previousMatch ? nextMatch : now;
 }
 
