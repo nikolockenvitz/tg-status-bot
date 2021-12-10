@@ -132,7 +132,7 @@ async function getDiscounts(url: string): Promise<Array<IDiscount>> {
     { headers: { "Cookie": config.DISCOUNT_SCANNER_KAUFLAND?.cookies || "" } }
   );
 
-  const regexValidFromTo = new RegExp(`<h2>Gültig vom (\\d{2}\\.\\d{2}\\.\\d{4}) bis (\\d{2}\\.\\d{2}\\.\\d{4})</h2>`);
+  const regexValidFromTo = new RegExp(`<h\\d>Gültig vom (\\d{2}\\.\\d{2}\\.\\d{4}) bis (\\d{2}\\.\\d{2}\\.\\d{4})</h\\d>`);
   const matchValidFromTo = regexValidFromTo.exec(html);
   const valid: IValidFromTo = {
     from: matchValidFromTo[1],
