@@ -13,11 +13,7 @@ export default class VaccinationAppointmentScanner extends AbstractAction {
     lastExecutionTime: Date,
     lastSuccessfulExecutionTime: Date
   ): Date {
-    function weekly(
-      weekday: number,
-      hour: number,
-      minute: number
-    ): number {
+    function weekly(weekday: number, hour: number, minute: number): number {
       return executionTimeHelper
         .weekly(lastExecutionTime, weekday, hour, minute)
         .getTime();
@@ -51,16 +47,16 @@ export default class VaccinationAppointmentScanner extends AbstractAction {
 
   async run(data: any, bot: TelegramBot): Promise<boolean> {
     let successful = true;
+    let messageToSend = "";
     for (const url of config.VAC3.urls) {
       const { name, urlApi, urlWeb } = url;
       try {
         const htmlPage = await fetch("GET", urlApi);
         const data = JSON.parse(htmlPage);
         if (data.dates && data.dates.length > 0) {
-          bot.send(
-            `Vac3: Available Appointments! ${name}\n${data.dates}\n\n[Book](${urlWeb})`,
-            { markdown: true }
-          );
+          messageToSend += `\n${name}: ${formatDates(
+            data.dates
+          )}\n\n[Book](${urlWeb})\n`;
         }
         continue;
       } catch (error) {
@@ -83,7 +79,17 @@ export default class VaccinationAppointmentScanner extends AbstractAction {
         continue;
       }
     }
+    if (messageToSend && messageToSend !== data.message) {
+      bot.send(`Vac3${messageToSend}`, { markdown: true });
+      data.message = messageToSend;
+    }
     data.successful = successful;
     return successful;
   }
+}
+
+function formatDates(dates: string[]): string {
+  return dates.reduce((str, date) => {
+    return `${str}\n- ${date}`;
+  }, "");
 }
