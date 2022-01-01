@@ -134,6 +134,12 @@ async function getDiscounts(url: string): Promise<Array<IDiscount>> {
 
   const regexValidFromTo = new RegExp(`<h\\d>Gültig vom (\\d{2}\\.\\d{2}\\.\\d{4}) bis (\\d{2}\\.\\d{2}\\.\\d{4})</h\\d>`);
   const matchValidFromTo = regexValidFromTo.exec(html);
+  if (matchValidFromTo === null) {
+    if (html.includes("liegen keine Angebote für die nächste Woche vor")) {
+      return [];
+    }
+    throw new Error(`Failed to parse date valid_from/to (${url})`)
+  }
   const valid: IValidFromTo = {
     from: matchValidFromTo[1],
     to: matchValidFromTo[2],
