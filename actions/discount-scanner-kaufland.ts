@@ -37,6 +37,7 @@ export default class KauflandDiscountScanner extends AbstractAction {
 
   async run(data: any, bot: TelegramBot): Promise<boolean> {
     try {
+      const t0 = Date.now();
       const urls = await getDiscountUrls(this.baseUrl, this.ignoreUrlPaths);
       const discounts: IDiscount[] = [].concat(...(await Promise.all(urls.map((url) => getDiscounts(url)))));
       if (discounts.length === 0) {
@@ -81,6 +82,7 @@ export default class KauflandDiscountScanner extends AbstractAction {
         discountIdsAlreadyIncluded.push(discountId);
       }
       message += `\nScanned ${urls.length} URLs and ${discounts.length} discounts`;
+      message += escapeMarkdown(` in ${(Date.now() - t0)/1000} seconds`);
       bot.send(message, { markdownV2: true });
       data.successful = true;
       return true;
@@ -157,6 +159,8 @@ async function findFurtherDiscountUrlsOnSubPagesSideAccordion(discountUrls: stri
 
   // for some discounts, there is a accordion on the page with further pages
   for (const discountUrl of discountUrls) {
+    if (!discountUrl.endsWith("-woche.html")) continue;
+
     const html = await fetch("GET", discountUrl);
     const regexShowAllUrls = new RegExp(
       `<li class="m-accordion__item m-accordion__item--level-2( m-accordion__link--active|)">`+
@@ -180,6 +184,8 @@ async function findFurtherDiscountUrlsOnSubPagesSeeAll(discountUrls: string[], b
 
   // for some discounts, there is a "see all" link on the page
   for (const discountUrl of discountUrls) {
+    if (!discountUrl.endsWith("-woche.html")) continue;
+
     const html = await fetch("GET", discountUrl);
     const regexShowAllUrls = new RegExp(
       `<a class=" a-link a-link--icon-arrow a-link--underlined" href="(?<url>[^"]*)" target="_self" data-t-name="Link" title="Alle Angebote anzeigen">`,
