@@ -55,14 +55,22 @@ export default class KauflandDiscountScanner extends AbstractAction {
 
       let message = "*🛒 Kaufland \\- Discounts*\n\n";
       const prevSectionValidity = { from: undefined, to: undefined };
+      const discountIdsAlreadyIncluded = [];
       for (const discount of sortedMatchingDiscounts) {
+        const discountId = getDiscountIdentifier(discount);
+        if (discountIdsAlreadyIncluded.includes(discountId)) {
+          // duplicate
+          continue;
+        }
         if (discount.valid.from !== prevSectionValidity.from || discount.valid.to !== prevSectionValidity.to) {
           prevSectionValidity.from = discount.valid.from;
           prevSectionValidity.to = discount.valid.to;
           message += validityFromToToMarkdown(discount.valid.from, discount.valid.to);
         }
         message += discountToMarkdown(discount);
+        discountIdsAlreadyIncluded.push(discountId);
       }
+      message += `\nScanned ${urls.length} URLs and ${discounts.length} discounts`;
       bot.send(message, { markdownV2: true });
       data.successful = true;
       return true;
@@ -123,7 +131,60 @@ async function getDiscountUrls(baseUrl: string, ignoreUrlPaths: string[]): Promi
       discountUrls.push(baseUrl + navUrls[i].url);
     }
   }
+
+  for (const furtherDiscountUrl of await findFurtherDiscountUrlsOnSubPagesSideAccordion(discountUrls, baseUrl, ignoreUrlPaths)) {
+    discountUrls.push(furtherDiscountUrl);
+  }
+  for (const furtherDiscountUrl of await findFurtherDiscountUrlsOnSubPagesSeeAll(discountUrls, baseUrl, ignoreUrlPaths)) {
+    discountUrls.push(furtherDiscountUrl);
+  }
+
   return discountUrls;
+}
+
+async function findFurtherDiscountUrlsOnSubPagesSideAccordion(discountUrls: string[], baseUrl: string, ignoreUrlPaths: string[]): Promise<string[]> {
+  const furtherDiscountUrls: string[] = [];
+
+  // for some discounts, there is a accordion on the page with further pages
+  for (const discountUrl of discountUrls) {
+    const html = await fetch("GET", discountUrl);
+    const regexShowAllUrls = new RegExp(
+      `<li class="m-accordion__item m-accordion__item--level-2( m-accordion__link--active|)">`+
+        `\\s*<a href="(?<url>[^"]*)" class="m-accordion__link">`,
+      "g"
+    );
+    let matchUrl;
+    while ((matchUrl = regexShowAllUrls.exec(html))) {
+      const url = matchUrl.groups.url
+      if (url.startsWith("/angebote/") && !ignoreUrlPaths.includes(url)) {
+        furtherDiscountUrls.push(baseUrl + url);
+      }
+    }
+  }
+
+  return furtherDiscountUrls;
+}
+
+async function findFurtherDiscountUrlsOnSubPagesSeeAll(discountUrls: string[], baseUrl: string, ignoreUrlPaths: string[]): Promise<string[]> {
+  const furtherDiscountUrls: string[] = [];
+
+  // for some discounts, there is a "see all" link on the page
+  for (const discountUrl of discountUrls) {
+    const html = await fetch("GET", discountUrl);
+    const regexShowAllUrls = new RegExp(
+      `<a class=" a-link a-link--icon-arrow a-link--underlined" href="(?<url>[^"]*)" target="_self" data-t-name="Link" title="Alle Angebote anzeigen">`,
+      "g"
+    );
+    let matchUrl;
+    while ((matchUrl = regexShowAllUrls.exec(html))) {
+      const url = matchUrl.groups.url
+      if (url.startsWith("/angebote/") && !ignoreUrlPaths.includes(url)) {
+        furtherDiscountUrls.push(baseUrl + url);
+      }
+    }
+  }
+
+  return furtherDiscountUrls;
 }
 
 async function getDiscounts(url: string): Promise<Array<IDiscount>> {
@@ -181,6 +242,10 @@ async function getDiscounts(url: string): Promise<Array<IDiscount>> {
   }
 
   return discounts;
+}
+
+function getDiscountIdentifier(discount: IDiscount) {
+  return `${discount.title}:${discount.subtitle}:${discount.valid}`;
 }
 
 function dateStringToUnixTimestamp(dateString: string): number {
