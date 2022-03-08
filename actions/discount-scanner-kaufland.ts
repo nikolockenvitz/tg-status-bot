@@ -7,19 +7,28 @@ import { IWeeklyExecutionTime } from "../types";
 const config = require("./general/config-import");
 
 export default class KauflandDiscountScanner extends AbstractAction {
-  private baseUrl = "https://filiale.kaufland.de";
-  private weeklyExecutionTime: IWeeklyExecutionTime;
-  private searchTerms: string[] = [];
-  private ignoreSearchTerms: string[] = [];
-  private ignoreUrlPaths: string[] = [];
+  protected baseUrl = "https://filiale.kaufland.de";
+  protected config: any;
+  protected weeklyExecutionTime: IWeeklyExecutionTime;
+  protected searchTerms: string[] = [];
+  protected ignoreSearchTerms: string[] = [];
+  protected ignoreUrlPaths: string[] = [];
+  protected cookies: string = "";
 
   constructor() {
     super();
-    this.weeklyExecutionTime = config.DISCOUNT_SCANNER_KAUFLAND?.weeklyExecutionTime || { day: "TUESDAY", hour: 9, minute: 30 };
-    this.searchTerms = config.DISCOUNT_SCANNER_KAUFLAND?.searchTerms;
-    this.ignoreSearchTerms = config.DISCOUNT_SCANNER_KAUFLAND?.ignoreSearchTerms;
-    this.ignoreUrlPaths = config.DISCOUNT_SCANNER_KAUFLAND?.ignoreUrlPaths;
+    this.config = config.DISCOUNT_SCANNER_KAUFLAND;
+    this.readConfig();
   }
+
+  readConfig() {
+    this.weeklyExecutionTime = this.config?.weeklyExecutionTime || { day: "TUESDAY", hour: 9, minute: 30 };
+    this.searchTerms = this.config?.searchTerms;
+    this.ignoreSearchTerms = this.config?.ignoreSearchTerms;
+    this.ignoreUrlPaths = this.config?.ignoreUrlPaths;
+    this.cookies = this.config?.cookies;
+  }
+
   getNextExecutionTime(lastExecutionTime: Date, lastSuccessfulExecutionTime: Date): Date {
     return lastExecutionTime.getTime() === lastSuccessfulExecutionTime.getTime()
       ? executionTimeHelper.weekly(
@@ -39,7 +48,7 @@ export default class KauflandDiscountScanner extends AbstractAction {
     try {
       const t0 = Date.now();
       const urls = await getDiscountUrls(this.baseUrl, this.ignoreUrlPaths);
-      const discounts: IDiscount[] = [].concat(...(await Promise.all(urls.map((url) => getDiscounts(url)))));
+      const discounts: IDiscount[] = [].concat(...(await Promise.all(urls.map((url) => getDiscounts(url, this.cookies)))));
       if (discounts.length === 0) {
         throw new Error("Internal Error - Found no discounts at all.");
       }
@@ -203,10 +212,10 @@ async function findFurtherDiscountUrlsOnSubPagesSeeAll(discountUrls: string[], b
   return furtherDiscountUrls;
 }
 
-async function getDiscounts(url: string): Promise<Array<IDiscount>> {
+async function getDiscounts(url: string, cookies: string = ""): Promise<Array<IDiscount>> {
   const html = await fetch(
     "GET", url, undefined,
-    { headers: { "Cookie": config.DISCOUNT_SCANNER_KAUFLAND?.cookies || "" } }
+    { headers: { "Cookie": cookies } }
   );
 
   const regexValidFromTo = new RegExp(`<h\\d>Gültig vom (\\d{2}\\.\\d{2}\\.\\d{4}) bis (\\d{2}\\.\\d{2}\\.\\d{4})</h\\d>`);
