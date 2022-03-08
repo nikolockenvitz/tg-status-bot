@@ -10,12 +10,14 @@ export default class KauflandDiscountScanner extends AbstractAction {
   private baseUrl = "https://filiale.kaufland.de";
   private weeklyExecutionTime: IWeeklyExecutionTime;
   private searchTerms: string[] = [];
+  private ignoreSearchTerms: string[] = [];
   private ignoreUrlPaths: string[] = [];
 
   constructor() {
     super();
     this.weeklyExecutionTime = config.DISCOUNT_SCANNER_KAUFLAND?.weeklyExecutionTime || { day: "TUESDAY", hour: 9, minute: 30 };
     this.searchTerms = config.DISCOUNT_SCANNER_KAUFLAND?.searchTerms;
+    this.ignoreSearchTerms = config.DISCOUNT_SCANNER_KAUFLAND?.ignoreSearchTerms;
     this.ignoreUrlPaths = config.DISCOUNT_SCANNER_KAUFLAND?.ignoreUrlPaths;
   }
   getNextExecutionTime(lastExecutionTime: Date, lastSuccessfulExecutionTime: Date): Date {
@@ -42,6 +44,14 @@ export default class KauflandDiscountScanner extends AbstractAction {
       }
       const matchingDiscounts: IDiscount[] = [];
       for (const discount of discounts) {
+        let ignore = false;
+        for (const ignoreSearchTerm of this.ignoreSearchTerms) {
+          if (doesSearchTermMatchDiscount(ignoreSearchTerm, discount)) {
+            ignore = true;
+            break;
+          }
+        }
+        if (ignore) continue;
         for (const searchTerm of this.searchTerms) {
           if (doesSearchTermMatchDiscount(searchTerm, discount)) {
             matchingDiscounts.push(discount);
