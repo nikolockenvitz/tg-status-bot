@@ -48,7 +48,11 @@ export default class KauflandDiscountScanner extends AbstractAction {
     try {
       const t0 = Date.now();
       const urls = await getDiscountUrls(this.baseUrl, this.ignoreUrlPaths);
-      const discounts: IDiscount[] = [].concat(...(await Promise.all(urls.map((url) => getDiscounts(url, this.cookies)))));
+      let errors = 0;
+      const discounts: IDiscount[] = [].concat(...(await Promise.all(urls.map((url) => getDiscounts(url, this.cookies)))).map(discountData => {
+        errors += discountData.errors;
+        return discountData.discounts;
+      }));
       if (discounts.length === 0) {
         throw new Error("Internal Error - Found no discounts at all.");
       }
@@ -92,6 +96,7 @@ export default class KauflandDiscountScanner extends AbstractAction {
       }
       message += `\nScanned ${urls.length} URLs and ${discounts.length} discounts`;
       message += escapeMarkdown(` in ${(Date.now() - t0)/1000} seconds`);
+      message += errors ? escapeMarkdown(` (with ${errors} errors)`) : "";
       bot.send(message, { markdownV2: true });
       data.successful = true;
       return true;
@@ -119,6 +124,7 @@ interface IDiscount {
   title: string | undefined;
   quantity: string;
   basicPrice: string | undefined;
+  disclaimer: string | undefined;
   discount: string | undefined;
   oldPrice: string;
   price: string;
@@ -212,7 +218,11 @@ async function findFurtherDiscountUrlsOnSubPagesSeeAll(discountUrls: string[], b
   return furtherDiscountUrls;
 }
 
-async function getDiscounts(url: string, cookies: string = ""): Promise<Array<IDiscount>> {
+async function getDiscounts(
+  url: string,
+  cookies: string = ""
+): Promise<{ discounts: Array<IDiscount>, errors: number }> {
+  let errors = 0;
   const html = await fetch(
     "GET", url, undefined,
     { headers: { "Cookie": cookies } }
@@ -222,7 +232,7 @@ async function getDiscounts(url: string, cookies: string = ""): Promise<Array<ID
   const matchValidFromTo = regexValidFromTo.exec(html);
   if (matchValidFromTo === null) {
     if (html.includes("liegen keine Angebote für die nächste Woche vor")) {
-      return [];
+      return { discounts: [], errors };
     }
     throw new Error(`Failed to parse date valid_from/to (${url})`)
   }
@@ -239,11 +249,12 @@ async function getDiscounts(url: string, cookies: string = ""): Promise<Array<ID
       `\\s*<div class="m-offer-tile__quantity">\\s*(?<quantity>.*[^\\s])\\s*</div>` +
       `(\\s*<div class="m-offer-tile__basic-price">(?<basicPrice>[^<]*) </div>|)` +
       `\\s*</div>\\s*</div>\\s*<div class="m-offer-tile__split">\\s*<div class="m-offer-tile__price-tiles">` +
-      `\\s*<div class="a-pricetag[^\\"]* ">` +
+      `\\s*<div class="a-pricetag[^\\"]*"[^>]*>` +
+      `(\\s*<div class="a-pricetag__disclaimer">\\s*(?<disclaimer>.*[^\\s])\\s*</div>|)` +
       `(\\s*<div class="a-pricetag__discount">\\s*(?<discount>.*[^\\s])\\s*</div>|)` +
-      `\\s*<div class="a-pricetag__price-container ">` +
+      `\\s*<div class="a-pricetag__price-container( |)">` +
       `\\s*<div class="a-pricetag__old-price">\\s*(?<oldPrice>.*[^\\s])\\s*</div>` +
-      `\\s*<div class="a-pricetag__price">\\s*(?<price>[^<]*[^\\s])(<.*>)?\\s*</div>`,
+      `\\s*<div class="a-pricetag__price">\\s*(?<price>[^<]*[^\\s])\\s*(<.*>)?\\s*</div>`,
     "g"
   );
   const discounts: Array<IDiscount> = [];
@@ -262,11 +273,12 @@ async function getDiscounts(url: string, cookies: string = ""): Promise<Array<ID
       const subtitle = subtitleEntry.split(">")[1].split("<")[0];
       if (!discounts.find((d) => d.subtitle === subtitle)) {
         console.log("Discount Scanner Kaufland failed for", subtitle, `(${url})`);
+        errors += 1;
       }
     }
   }
 
-  return discounts;
+  return { discounts, errors };
 }
 
 function getDiscountIdentifier(discount: IDiscount) {
@@ -293,7 +305,9 @@ function discountToMarkdown(discount: IDiscount): string {
   return (
     `*${escapeMarkdown(discount.subtitle)} ${escapeMarkdown(discount.title || "")}*\n` +
     `~${escapeMarkdown(discount.oldPrice)}~ ${escapeMarkdown(discount.price)} \\(${escapeMarkdown(discount.discount)}\\)\n` +
-    `${escapeMarkdown(discount.quantity)} ${escapeMarkdown(discount.basicPrice)}\n\n`
+    `${escapeMarkdown(discount.quantity)} ${escapeMarkdown(discount.basicPrice)}\n` +
+    `${discount.disclaimer ? `⚠ ${escapeMarkdown(discount.disclaimer)}\n` : ``}` +
+    `\n`
   );
 }
 
