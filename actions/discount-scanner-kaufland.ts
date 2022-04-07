@@ -14,6 +14,7 @@ export default class KauflandDiscountScanner extends AbstractAction {
   protected ignoreSearchTerms: string[] = [];
   protected ignoreUrlPaths: string[] = [];
   protected cookies: string = "";
+  protected description: string = "";
 
   constructor() {
     super();
@@ -27,6 +28,7 @@ export default class KauflandDiscountScanner extends AbstractAction {
     this.ignoreSearchTerms = this.config?.ignoreSearchTerms;
     this.ignoreUrlPaths = this.config?.ignoreUrlPaths;
     this.cookies = this.config?.cookies;
+    this.description = this.config?.description || `Search: ${(this.searchTerms || ["?"]).join(", ")}`;
   }
 
   getNextExecutionTime(lastExecutionTime: Date, lastSuccessfulExecutionTime: Date): Date {
@@ -77,7 +79,9 @@ export default class KauflandDiscountScanner extends AbstractAction {
         return d1.valid.toUnixTimestamp - d2.valid.toUnixTimestamp || d1.valid.fromUnixTimestamp - d2.valid.fromUnixTimestamp;
       });
 
-      let message = "*🛒 Kaufland \\- Discounts*\n\n";
+      let message = "*🛒 Kaufland \\- Discounts*\n";
+      message += escapeMarkdown(this.description) + "\n\n";
+      message += "\n";
       const prevSectionValidity = { from: undefined, to: undefined };
       const discountIdsAlreadyIncluded = [];
       for (const discount of sortedMatchingDiscounts) {
