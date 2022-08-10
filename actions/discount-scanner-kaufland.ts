@@ -271,7 +271,7 @@ async function getDiscounts(
   }
 
   const subtitleEntries = html.match(new RegExp(`<h5 class="m-offer-tile__subtitle">(?<subtitle>[^<]*)</h5>`, "g"));
-  if (discounts.length !== subtitleEntries.length) {
+  if (discounts.length !== (subtitleEntries?.length || 0)) {
     // complete regex doesn't match for certain entries; find and log them to fix it
     for (const subtitleEntry of subtitleEntries) {
       const subtitle = subtitleEntry.split(">")[1].split("<")[0];
