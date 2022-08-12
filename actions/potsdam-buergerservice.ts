@@ -166,7 +166,7 @@ export default class PotsdamBuergerservice extends AbstractAction {
     }
 
     const regexAppointmentCalendarCell = new RegExp(
-      `<div class="ekolCalendarDayNumberInRange">(\\d+)<span>\\.(\\d+)\\.</span></div><div class="ekolCalendarFreeTimeContainer">(\\d+) frei</div>`,
+      `<div class="ekolCalendar_DayNumberInRange">(\\d+)<span class="conMonthNr">\\.(\\d+)\\.</span></div><div class="ekolCalendar_FreeTimeContainer">(\\d+) frei</div>`,
       "g"
     );
     let matchAppointmentCalendarCell;
