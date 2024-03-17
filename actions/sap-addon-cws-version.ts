@@ -12,7 +12,7 @@ export default class SAPAddonCwsVersion extends AbstractAction {
 
   async run(data: any, bot: TelegramBot): Promise<boolean> {
     const html = await fetch("GET", "https://chrome.google.com/webstore/detail/sap-addon/ccjpkhcdklddbfpcboffbeihonalpjkc");
-    const versionRegex = new RegExp(`<meta itemprop="version" content="([^"]*)"/>`); // alt: `<div class="C-b-p-D-J"><span class="C-b-p-D-R">Version:</span>&nbsp;<span class="C-b-p-D-Xe h-C-b-p-D-md">([^<>]*)</span>`
+    const versionRegex = new RegExp(`>Version</div><div class="[^"]*">([^<]*)<`)
     const regexResult = versionRegex.exec(html);
     if (regexResult === null) {
       bot.send("Reading version for SAP Addon failed - regex didn't match");
