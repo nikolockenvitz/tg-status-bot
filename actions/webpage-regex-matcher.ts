@@ -30,7 +30,7 @@ export default class WebpageRegexMatcher extends AbstractAction {
         const dataId = webpage.url + " " + webpage.regex.toString();
         const html = await fetch("GET", webpage.url);
         const regexResult = html.match(webpage.regex) !== null;
-        if (regexResult && !data[dataId]) {
+        if (regexResult && (webpage.resend === true || !data[dataId])) {
           bot.send(`WebpageRegexMatch: ${webpage.message}\n\n${webpage.url}`);
         }
         data[dataId] = regexResult;

@@ -9,6 +9,7 @@ export interface IWebpageRegexMatcherConfig {
     url: string;
     message: string;
     regex: RegExp;
+    resend?: boolean;
   }>;
 }
 
