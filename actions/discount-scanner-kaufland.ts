@@ -180,7 +180,7 @@ async function getDiscounts(
     const jsonDiscountData = JSON.parse(rawJsonStr).props.offerData;
 
     const discounts: IDiscount[] = [];
-    for (const offer of jsonDiscountData.loyalty.offers) {
+    for (const offer of jsonDiscountData?.loyalty?.offers ?? []) {
       const discount = parseOffer(offer);
       if (discount) discounts.push(discount);
       else errors += 1;
@@ -198,7 +198,8 @@ async function getDiscounts(
     return { discounts, errors };
   } catch (err) {
     errors += 1;
-    console.log("Couldn't parse discounts on", url);
+    console.warn("Couldn't parse discounts on", url);
+    console.warn(err);
     return { discounts: [], errors };
   }
 }

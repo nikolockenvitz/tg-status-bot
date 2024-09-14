@@ -37,7 +37,7 @@ async function main() {
     actions.reduce((actionsEnabledStatus, action) => {
       actionsEnabledStatus[action.name] = action.isEnabled();
       return actionsEnabledStatus;
-    }, {}),
+    }, {} as Record<string, boolean>),
     data._updateTimes,
     data._lastSuccessfulUpdateTimes,
     actionCallback
@@ -121,7 +121,7 @@ async function readDataFromFile(): Promise<IData> {
 
 async function saveDataToFile(data: IData) {
   return new Promise((resolve) => {
-    fs.writeFile(FILENAME_DATA, JSON.stringify(data, null, 2), "utf8", (err) => {
+    fs.writeFile(FILENAME_DATA, JSON.stringify(data, null, 2), "utf8", (err: any) => {
       if (err) throw err;
       resolve(true);
     });
