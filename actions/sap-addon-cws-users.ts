@@ -10,6 +10,10 @@ export default class SAPAddonCwsVersion extends AbstractAction {
       : executionTimeHelper.interval(lastExecutionTime, 5 * 60);
   }
 
+  isEnabled(): boolean {
+    return false;
+  }
+
   async run(data: any, bot: TelegramBot): Promise<boolean> {
     const html = await fetch("GET", "https://chrome.google.com/webstore/detail/sap-addon/ccjpkhcdklddbfpcboffbeihonalpjkc");
     const userRegex = new RegExp(`>([^ ]*) users<`);
